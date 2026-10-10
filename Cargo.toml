@@ -1,0 +1,42 @@
+[package]
+name = "ps-rustls-rustcrypto"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+authors = ["RustCrypto Developers"]
+license = "MIT"
+description = "Pure RustCrypto provider for rustls, with TLS 1.2 and TLS 1.3"
+repository = "https://github.com/pathscale/ps-rustls-rustcrypto"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["rustls", "tls", "rustcrypto"]
+
+[features]
+default = ["std", "tls12", "zeroize"]
+alloc = ["pki-types/alloc", "aead/alloc", "ed25519-dalek/alloc"]
+std = ["alloc", "pki-types/std", "rustls/std", "ed25519-dalek/std"]
+tls12 = ["rustls/tls12"]
+logging = ["rustls/logging"]
+zeroize = ["ed25519-dalek/zeroize", "x25519-dalek/zeroize"]
+
+[dependencies]
+aead = { version = "^0.5.2", default-features = false }
+aes-gcm = { version = "^0.10.3", default-features = false, features = ["aes", "alloc"] }
+chacha20poly1305 = { version = "^0.10.1", default-features = false }
+crypto-common = { version = "^0.1.6", default-features = false }
+digest = { version = "^0.10.7", default-features = false }
+ed25519-dalek = { version = "^2", default-features = false, features = ["pkcs8"] }
+hmac = { version = "^0.12.1", default-features = false }
+p256 = { version = "^0.13.2", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
+p384 = { version = "^0.13.1", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
+paste = { version = "^1", default-features = false }
+pkcs8 = { version = "^0.10.2", default-features = false, features = ["alloc"] }
+pki-types = { package = "rustls-pki-types", version = "^1.14", default-features = false }
+rand_core = { version = "^0.6.4", default-features = false, features = ["getrandom"] }
+rsa = { version = "^0.9", default-features = false, features = ["sha2"] }
+rustls = { version = "^0.23.27", default-features = false }
+sec1 = { version = "^0.7.3", default-features = false, features = ["pkcs8"] }
+sha2 = { version = "^0.10.7", default-features = false, features = ["oid"] }
+signature = { version = "^2.2", default-features = false }
+x25519-dalek = { version = "^2", default-features = false, features = ["static_secrets"] }
+
