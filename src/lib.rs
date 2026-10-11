@@ -36,11 +36,7 @@ pub fn provider() -> CryptoProvider {
 
 impl SecureRandom for Provider {
     fn fill(&self, bytes: &mut [u8]) -> Result<(), GetRandomFailed> {
-        use rand_core::RngCore;
-
-        rand_core::OsRng
-            .try_fill_bytes(bytes)
-            .map_err(|_| GetRandomFailed)
+        getrandom::fill(bytes).map_err(|_| GetRandomFailed)
     }
 }
 

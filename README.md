@@ -9,6 +9,13 @@ supplies ChaCha20-Poly1305, SHA-256, HMAC, X25519, P-256 and P-384.
 Certificate and handshake signature verification supports P-256/P-384 ECDSA
 and Ed25519.
 
+Version 0.3.0 uses chacha20poly1305 0.11, digest 0.11, sha2 0.11,
+hmac 0.13, p256/p384 0.14, sec1 0.8, pkcs8 0.11, signature 3,
+ed25519-dalek/x25519-dalek 3 and rustls-pki-types 1.
+System entropy comes from getrandom 0.4 through its fallible `fill` API.
+AEAD traits come from `chacha20poly1305::aead`; there are no direct
+aead, crypto-common, rand_core or paste dependencies.
+
 There is deliberately no AES and no RSA. Servers that only offer AES suites,
 and servers or certificate chains that need RSA signatures, are refused.
 
@@ -28,6 +35,8 @@ This crate creates no threads, channels or network connections.
 Changes from upstream:
 
 - Published fork name and caret dependencies.
+- Ported to the current RustCrypto generation with major-line carets.
+- Replaced paste identifier generation with explicit type names.
 - Removed the unused direct webpki dependency and use pki-types algorithm IDs.
 - Removed AES-GCM and RSA (verification and signing) entirely.
 - Prefer TLS 1.3 suites and advertise only implemented signature schemes.
@@ -49,4 +58,3 @@ must still be audited before publication.
 AES, RSA, P-521, SHA-1 signatures, QUIC and FIPS certification are not
 supported. Unsupported algorithms fail verification; they do not
 fall back to another provider.
-

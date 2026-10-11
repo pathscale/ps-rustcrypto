@@ -1,4 +1,4 @@
-use aead::Buffer;
+use chacha20poly1305::aead::{self, Buffer};
 use rustls::crypto::cipher::{BorrowedPayload, PrefixedPayload};
 
 pub mod chacha20;

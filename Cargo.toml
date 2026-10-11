@@ -1,6 +1,6 @@
 [package]
 name = "ps-rustcrypto"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.85"
 authors = ["RustCrypto Developers"]
@@ -13,28 +13,24 @@ keywords = ["rustls", "tls", "rustcrypto"]
 
 [features]
 default = ["std", "tls12", "zeroize"]
-alloc = ["pki-types/alloc", "aead/alloc", "ed25519-dalek/alloc"]
-std = ["alloc", "pki-types/std", "rustls/std", "ed25519-dalek/std"]
+alloc = ["pki-types/alloc", "ed25519-dalek/alloc", "signature/alloc"]
+std = ["alloc", "pki-types/std", "rustls/std"]
 tls12 = ["rustls/tls12"]
 logging = ["rustls/logging"]
 zeroize = ["ed25519-dalek/zeroize", "x25519-dalek/zeroize"]
 
 [dependencies]
-aead = { version = "^0.5.2", default-features = false }
-chacha20poly1305 = { version = "^0.10.1", default-features = false }
-crypto-common = { version = "^0.1.6", default-features = false }
-digest = { version = "^0.10.7", default-features = false }
-ed25519-dalek = { version = "^2", default-features = false, features = ["pkcs8"] }
-hmac = { version = "^0.12.1", default-features = false }
-p256 = { version = "^0.13.2", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
-p384 = { version = "^0.13.1", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
-paste = { version = "^1", default-features = false }
-pkcs8 = { version = "^0.10.2", default-features = false, features = ["alloc"] }
-pki-types = { package = "rustls-pki-types", version = "^1.14", default-features = false }
-rand_core = { version = "^0.6.4", default-features = false, features = ["getrandom"] }
-rustls = { version = "^0.23.27", default-features = false }
-sec1 = { version = "^0.7.3", default-features = false, features = ["pkcs8"] }
-sha2 = { version = "^0.10.7", default-features = false, features = ["oid"] }
-signature = { version = "^2.2", default-features = false }
-x25519-dalek = { version = "^2", default-features = false, features = ["static_secrets"] }
-
+chacha20poly1305 = { version = "^0.11", default-features = false }
+digest = { version = "^0.11", default-features = false }
+ed25519-dalek = { version = "^3", default-features = false, features = ["pkcs8"] }
+getrandom = { version = "^0.4", default-features = false }
+hmac = { version = "^0.13", default-features = false }
+p256 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
+p384 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
+pkcs8 = { version = "^0.11", default-features = false, features = ["alloc"] }
+pki-types = { package = "rustls-pki-types", version = "^1", default-features = false }
+rustls = { version = "^0.23", default-features = false }
+sec1 = { version = "^0.8", default-features = false, features = ["der"] }
+sha2 = { version = "^0.11", default-features = false, features = ["oid"] }
+signature = { version = "^3", default-features = false }
+x25519-dalek = { version = "^3", default-features = false, features = ["static_secrets"] }
