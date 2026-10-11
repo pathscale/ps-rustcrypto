@@ -1,4 +1,4 @@
-# ps-rustls-rustcrypto
+# ps-rustcrypto
 
 A synchronous RustCrypto provider for rustls 0.23, derived from
 RustCrypto/rustls-rustcrypto v0.0.2-alpha under its MIT licence.
@@ -11,7 +11,7 @@ supports P-256/P-384 ECDSA, Ed25519, RSA PKCS#1 and RSA-PSS with SHA-2.
 Use an explicit provider:
 
 ```rust
-let provider = std::sync::Arc::new(ps_rustls_rustcrypto::provider());
+let provider = std::sync::Arc::new(ps_rustcrypto::provider());
 let config = rustls::ClientConfig::builder_with_provider(provider)
     .with_safe_default_protocol_versions()?
     .with_root_certificates(roots)

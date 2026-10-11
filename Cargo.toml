@@ -1,12 +1,12 @@
 [package]
-name = "ps-rustls-rustcrypto"
+name = "ps-rustcrypto"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
 authors = ["RustCrypto Developers"]
 license = "MIT"
 description = "Pure RustCrypto provider for rustls, with TLS 1.2 and TLS 1.3"
-repository = "https://github.com/pathscale/ps-rustls-rustcrypto"
+repository = "https://github.com/pathscale/ps-rustcrypto"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["rustls", "tls", "rustcrypto"]
