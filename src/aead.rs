@@ -2,7 +2,6 @@ use aead::Buffer;
 use rustls::crypto::cipher::{BorrowedPayload, PrefixedPayload};
 
 pub mod chacha20;
-pub mod gcm;
 
 pub(crate) struct EncryptBufferAdapter<'a>(pub(crate) &'a mut PrefixedPayload);
 

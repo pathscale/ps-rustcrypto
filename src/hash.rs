@@ -3,7 +3,7 @@ use alloc::boxed::Box;
 use digest::{Digest, OutputSizeUser};
 use paste::paste;
 use rustls::crypto::{self, hash};
-use sha2::{Sha256, Sha384};
+use sha2::Sha256;
 
 macro_rules! impl_hash {
     ($name:ident, $ty:ty, $algo:expr) => {
@@ -56,4 +56,3 @@ macro_rules! impl_hash {
 }
 
 impl_hash!(SHA256, Sha256, hash::HashAlgorithm::SHA256);
-impl_hash!(SHA384, Sha384, hash::HashAlgorithm::SHA384);
