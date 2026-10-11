@@ -1,14 +1,10 @@
 use alloc::boxed::Box;
 
-use paste::paste;
-use rand_core::RngCore;
 use rustls::crypto::{ActiveKeyExchange, SharedSecret, SupportedKxGroup};
 use rustls::{Error, NamedGroup, PeerMisbehaved};
 
 fn entropy(bytes: &mut [u8]) -> Result<(), Error> {
-    rand_core::OsRng
-        .try_fill_bytes(bytes)
-        .map_err(|_| Error::FailedToGetRandomBytes)
+    getrandom::fill(bytes).map_err(|_| Error::FailedToGetRandomBytes)
 }
 
 fn invalid_share() -> Error {
@@ -60,63 +56,63 @@ impl ActiveKeyExchange for X25519Exchange {
 }
 
 macro_rules! impl_kx {
-    ($name:ident, $group:expr, $curve:ident, $size:expr) => {
-        paste! {
-            #[derive(Debug)]
-            struct $name;
+    ($name:ident, $exchange:ident, $group:expr, $curve:ident, $size:expr) => {
+        #[derive(Debug)]
+        struct $name;
 
-            impl SupportedKxGroup for $name {
-                fn name(&self) -> NamedGroup {
-                    $group
-                }
-
-                fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, Error> {
-                    let mut bytes = [0u8; $size];
-                    let secret = loop {
-                        entropy(&mut bytes)?;
-                        if let Ok(secret) = $curve::SecretKey::from_slice(&bytes) {
-                            break secret;
-                        }
-                    };
-                    bytes.fill(0);
-                    let public = secret.public_key().to_sec1_bytes();
-                    Ok(Box::new([<$name Exchange>] { secret, public }))
-                }
+        impl SupportedKxGroup for $name {
+            fn name(&self) -> NamedGroup {
+                $group
             }
 
-            struct [<$name Exchange>] {
-                secret: $curve::SecretKey,
-                public: Box<[u8]>,
-            }
+            fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+                use $curve::elliptic_curve::sec1::ToSec1Point;
 
-            impl ActiveKeyExchange for [<$name Exchange>] {
-                fn complete(self: Box<Self>, peer: &[u8]) -> Result<SharedSecret, Error> {
-                    // TLS uses the uncompressed SEC1 representation.
-                    if peer.len() != 1 + 2 * $size || peer.first() != Some(&4) {
-                        return Err(invalid_share());
+                let mut bytes = [0u8; $size];
+                let secret = loop {
+                    entropy(&mut bytes)?;
+                    if let Ok(secret) = $curve::SecretKey::from_slice(&bytes) {
+                        break secret;
                     }
-                    let public = $curve::PublicKey::from_sec1_bytes(peer)
-                        .map_err(|_| invalid_share())?;
-                    let secret = $curve::ecdh::diffie_hellman(
-                        self.secret.to_nonzero_scalar(),
-                        public.as_affine(),
-                    );
-                    Ok(secret.raw_secret_bytes().as_slice().into())
-                }
+                };
+                bytes.fill(0);
+                let public = secret.public_key().to_sec1_point(false).to_bytes();
+                Ok(Box::new($exchange { secret, public }))
+            }
+        }
 
-                fn pub_key(&self) -> &[u8] {
-                    &self.public
-                }
+        struct $exchange {
+            secret: $curve::SecretKey,
+            public: Box<[u8]>,
+        }
 
-                fn group(&self) -> NamedGroup {
-                    $group
+        impl ActiveKeyExchange for $exchange {
+            fn complete(self: Box<Self>, peer: &[u8]) -> Result<SharedSecret, Error> {
+                // TLS uses the uncompressed SEC1 representation.
+                if peer.len() != 1 + 2 * $size || peer.first() != Some(&4) {
+                    return Err(invalid_share());
                 }
+                let public = $curve::PublicKey::from_sec1_bytes(peer)
+                    .map_err(|_| invalid_share())?;
+                let secret = $curve::ecdh::diffie_hellman(
+                    self.secret.to_nonzero_scalar(),
+                    public.as_affine(),
+                );
+                Ok(secret.raw_secret_bytes().as_slice().into())
+            }
+
+            fn pub_key(&self) -> &[u8] {
+                &self.public
+            }
+
+            fn group(&self) -> NamedGroup {
+                $group
             }
         }
     };
 }
 
-impl_kx!(P256, NamedGroup::secp256r1, p256, 32);
-impl_kx!(P384, NamedGroup::secp384r1, p384, 48);
+impl_kx!(P256, P256Exchange, NamedGroup::secp256r1, p256, 32);
+impl_kx!(P384, P384Exchange, NamedGroup::secp384r1, p384, 48);
 
 pub const ALL_KX_GROUPS: &[&dyn SupportedKxGroup] = &[&X25519, &P256, &P384];
