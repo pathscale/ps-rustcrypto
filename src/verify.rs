@@ -4,15 +4,11 @@ use rustls::SignatureScheme;
 
 use self::ecdsa::{ECDSA_P256_SHA256, ECDSA_P256_SHA384, ECDSA_P384_SHA256, ECDSA_P384_SHA384};
 use self::eddsa::ED25519;
-use self::rsa::{
-    RSA_PKCS1_SHA256, RSA_PKCS1_SHA384, RSA_PKCS1_SHA512, RSA_PSS_SHA256, RSA_PSS_SHA384,
-    RSA_PSS_SHA512,
-};
 
 mod ecdsa;
 mod eddsa;
-mod rsa;
 
+/// ECDSA and Ed25519 only: servers and chains that need RSA are refused.
 pub static ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
     all: &[
         ECDSA_P256_SHA256,
@@ -20,12 +16,6 @@ pub static ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
         ECDSA_P384_SHA256,
         ECDSA_P384_SHA384,
         ED25519,
-        RSA_PKCS1_SHA256,
-        RSA_PKCS1_SHA384,
-        RSA_PKCS1_SHA512,
-        RSA_PSS_SHA256,
-        RSA_PSS_SHA384,
-        RSA_PSS_SHA512,
     ],
     mapping: &[
         (
@@ -37,12 +27,6 @@ pub static ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
             &[ECDSA_P384_SHA384, ECDSA_P256_SHA384],
         ),
         (SignatureScheme::ED25519, &[ED25519]),
-        (SignatureScheme::RSA_PSS_SHA256, &[RSA_PSS_SHA256]),
-        (SignatureScheme::RSA_PSS_SHA384, &[RSA_PSS_SHA384]),
-        (SignatureScheme::RSA_PSS_SHA512, &[RSA_PSS_SHA512]),
-        (SignatureScheme::RSA_PKCS1_SHA256, &[RSA_PKCS1_SHA256]),
-        (SignatureScheme::RSA_PKCS1_SHA384, &[RSA_PKCS1_SHA384]),
-        (SignatureScheme::RSA_PKCS1_SHA512, &[RSA_PKCS1_SHA512]),
     ],
 };
 
