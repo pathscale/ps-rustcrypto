@@ -14,6 +14,8 @@ use rustls::{CipherSuite, SupportedCipherSuite, Tls13CipherSuite};
 use rustls::SignatureScheme;
 
 mod aead;
+#[cfg(all(feature = "std", feature = "rsa-pss"))]
+pub mod fallback;
 mod hash;
 mod hmac;
 mod kx;
@@ -36,10 +38,10 @@ pub fn provider() -> CryptoProvider {
     }
 }
 
-/// `provider()` that also accepts RSA-PSS server handshake signatures.
+/// `provider()` for the RSA fallback connection.
 ///
-/// Only the CertificateVerify can be RSA; chains signed with RSA PKCS#1 v1.5
-/// are still refused.
+/// The server CertificateVerify may be RSA-PSS and certificate signatures may
+/// be RSA PKCS#1 v1.5; nothing else about RSA is accepted.
 #[cfg(feature = "rsa-pss")]
 pub fn provider_with_rsa_pss() -> CryptoProvider {
     CryptoProvider {
