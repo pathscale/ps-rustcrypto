@@ -1,5 +1,5 @@
+use legacy_bullshit::rsa::{Hash, RsaPublicKey};
 use pki_types::{alg_id, AlgorithmIdentifier, InvalidSignature, SignatureVerificationAlgorithm};
-use rsa_handshake::{Hash, RsaPublicKey};
 
 macro_rules! impl_rsa {
     ($name:ident, $verifier:ident, $signature_id:expr, $hash:expr, $verify:ident) => {

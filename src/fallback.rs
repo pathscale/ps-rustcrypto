@@ -5,7 +5,7 @@
 //! ECC-only hello (alert 40), the caller may open a new connection with this
 //! verifier. It keeps every native root, RSA ones included, and verifies RSA
 //! certificate signatures with PKCS#1 v1.5 and the server CertificateVerify
-//! with RSA-PSS, through `rsa-handshake`. Keys stay at 2048 to 8192 bits with
+//! with RSA-PSS, through `legacy-bullshit`. Keys stay at 2048 to 8192 bits with
 //! exponent 65537.
 //!
 //! RSA roots live only in this store; the ECC-only store never sees them.
