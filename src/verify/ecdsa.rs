@@ -22,18 +22,17 @@ macro_rules! impl_ecdsa {
                 message: &[u8],
                 signature: &[u8],
             ) -> Result<(), InvalidSignature> {
-                let signature = <$signature>::from_der(signature)
-                    .map_err(|_| super::invalid_signature())?;
-                let key = <$key>::from_sec1_bytes(public_key)
-                    .map_err(|_| super::invalid_signature())?;
+                let signature =
+                    <$signature>::from_der(signature).map_err(|_| super::invalid_signature())?;
+                let key =
+                    <$key>::from_sec1_bytes(public_key).map_err(|_| super::invalid_signature())?;
                 let digest = <$hash>::digest(message);
                 key.verify_prehash(&digest, &signature)
                     .map_err(|_| super::invalid_signature())
             }
         }
 
-        pub const $name: &dyn SignatureVerificationAlgorithm =
-            super::algorithm(&$verifier);
+        pub const $name: &dyn SignatureVerificationAlgorithm = super::algorithm(&$verifier);
     };
 }
 

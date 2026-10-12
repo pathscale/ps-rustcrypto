@@ -92,8 +92,8 @@ macro_rules! impl_kx {
                 if peer.len() != 1 + 2 * $size || peer.first() != Some(&4) {
                     return Err(invalid_share());
                 }
-                let public = $curve::PublicKey::from_sec1_bytes(peer)
-                    .map_err(|_| invalid_share())?;
+                let public =
+                    $curve::PublicKey::from_sec1_bytes(peer).map_err(|_| invalid_share())?;
                 let secret = $curve::ecdh::diffie_hellman(
                     self.secret.to_nonzero_scalar(),
                     public.as_affine(),

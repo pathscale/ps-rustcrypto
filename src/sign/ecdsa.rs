@@ -25,21 +25,24 @@ macro_rules! impl_ecdsa {
                             .map_err(|_| Error::General("invalid ECDSA PKCS#8 key".into()))?
                     }
                     PrivateKeyDer::Sec1(der) => {
-                        let secret =
-                            <$secret_key as DecodeEcPrivateKey>::from_sec1_der(
-                                der.secret_sec1_der(),
-                            )
-                            .map_err(|_| Error::General("invalid ECDSA SEC1 key".into()))?;
+                        let secret = <$secret_key as DecodeEcPrivateKey>::from_sec1_der(
+                            der.secret_sec1_der(),
+                        )
+                        .map_err(|_| Error::General("invalid ECDSA SEC1 key".into()))?;
                         <$signing_key>::from(secret)
                     }
                     _ => return Err(Error::General("unsupported ECDSA key encoding".into())),
                 };
-                let spki = key.verifying_key()
+                let spki = key
+                    .verifying_key()
                     .to_public_key_der()
                     .map_err(|_| Error::General("ECDSA public key encoding failed".into()))?
                     .as_bytes()
                     .to_vec();
-                Ok(Self { key: Arc::new(key), spki })
+                Ok(Self {
+                    key: Arc::new(key),
+                    spki,
+                })
             }
         }
 
