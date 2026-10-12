@@ -17,6 +17,8 @@ mod aead;
 mod hash;
 mod hmac;
 mod kx;
+#[cfg(feature = "std")]
+pub mod policy;
 pub mod sign;
 mod verify;
 
