@@ -26,6 +26,21 @@ pub fn rsa_fallback_verifier(
     .build()
 }
 
+/// The RSA fallback verifier over roots, with CT on chains that also
+/// validate against public_roots, the publicly trusted subset.
+pub fn rsa_fallback_ct_verifier(
+    roots: RootCertStore,
+    public_roots: RootCertStore,
+) -> Result<Arc<crate::policy::ct::CtVerifier>, VerifierBuilderError> {
+    use crate::policy::ct::CtVerifier;
+    let inner = rsa_fallback_verifier(roots)?;
+    if public_roots.is_empty() {
+        return Ok(CtVerifier::without_public_roots(inner));
+    }
+    let public = rsa_fallback_verifier(public_roots)?;
+    Ok(CtVerifier::public_only(inner, public))
+}
+
 /// Whether an ECC-only handshake error should be retried with the fallback:
 /// our own RSA refusal, the server answering handshake_failure, or the server
 /// answering the hello with a record that is not a handshake message.

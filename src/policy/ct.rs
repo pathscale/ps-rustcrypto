@@ -229,20 +229,68 @@ pub fn evaluate(
 }
 
 /// A server certificate verifier that runs another, then the CT policy.
+///
+/// Like Chrome, CT can be limited to chains ending in a publicly trusted
+/// root: a chain that only validates against a locally added anchor (an
+/// enterprise or test CA) is accepted without SCTs.
 #[derive(Debug)]
 pub struct CtVerifier {
     inner: Arc<dyn ServerCertVerifier>,
+    scope: Scope,
+}
+
+/// Which chains the CT policy applies to.
+#[derive(Debug)]
+enum Scope {
+    /// Every chain inner accepts.
+    Every,
+    /// Chains this verifier, built from the public roots, also accepts.
+    Public(Arc<dyn ServerCertVerifier>),
+    /// No chain: none of the trust anchors is public.
+    Nothing,
 }
 
 impl CtVerifier {
-    /// CT on top of inner, which validates the chain first.
+    /// CT on every chain inner, which validates the chain first, accepts.
     pub fn new(inner: Arc<dyn ServerCertVerifier>) -> Arc<Self> {
-        Arc::new(Self { inner })
+        Arc::new(Self {
+            inner,
+            scope: Scope::Every,
+        })
     }
 
-    /// CT on top of the ECC-only chain policy.
-    pub fn ecc_only(roots: RootCertStore) -> Result<Arc<Self>, VerifierBuilderError> {
-        Ok(Self::new(super::EccOnlyVerifier::new(roots)?))
+    /// CT only on chains that public, a verifier over the publicly trusted
+    /// roots, also accepts. Chains only inner accepts skip CT.
+    pub fn public_only(
+        inner: Arc<dyn ServerCertVerifier>,
+        public: Arc<dyn ServerCertVerifier>,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            inner,
+            scope: Scope::Public(public),
+        })
+    }
+
+    /// inner with CT for no chain, for a trust store without public roots.
+    pub fn without_public_roots(inner: Arc<dyn ServerCertVerifier>) -> Arc<Self> {
+        Arc::new(Self {
+            inner,
+            scope: Scope::Nothing,
+        })
+    }
+
+    /// The ECC-only chain policy over roots, with CT on chains that also
+    /// validate against public_roots, the publicly trusted subset.
+    pub fn ecc_only(
+        roots: RootCertStore,
+        public_roots: RootCertStore,
+    ) -> Result<Arc<Self>, VerifierBuilderError> {
+        let inner = super::EccOnlyVerifier::new(roots)?;
+        if public_roots.is_empty() {
+            return Ok(Self::without_public_roots(inner));
+        }
+        let public = super::EccOnlyVerifier::new(public_roots)?;
+        Ok(Self::public_only(inner, public))
     }
 }
 
@@ -262,6 +310,16 @@ impl ServerCertVerifier for CtVerifier {
             ocsp_response,
             now,
         )?;
+        let public = match &self.scope {
+            Scope::Every => true,
+            Scope::Public(public) => public
+                .verify_server_cert(end_entity, intermediates, server_name, ocsp_response, now)
+                .is_ok(),
+            Scope::Nothing => false,
+        };
+        if !public {
+            return Ok(verified);
+        }
         let intermediates: Vec<&[u8]> = intermediates.iter().map(|der| der.as_ref()).collect();
         evaluate(end_entity.as_ref(), &intermediates, ocsp_response, &[], now).map_err(
             |error| Error::InvalidCertificate(CertificateError::Other(OtherError(Arc::new(error)))),

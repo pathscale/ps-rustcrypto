@@ -136,35 +136,75 @@ fn a_certificate_without_scts_is_not_logged() {
     assert_eq!((error.found, error.valid), (0, 0));
 }
 
-#[test]
-fn the_verifier_reports_an_unlogged_chain_readably() {
+/// A root and a localhost leaf it signed, neither carrying SCTs.
+fn generated_chain(name: &str) -> (CertificateDer<'static>, CertificateDer<'static>) {
     let mut params = CertificateParams::new(Vec::new()).unwrap();
     params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
-    params
-        .distinguished_name
-        .push(DnType::CommonName, "CT test root");
+    params.distinguished_name.push(DnType::CommonName, name);
     let root = CertifiedIssuer::self_signed(params, KeyPair::generate().unwrap()).unwrap();
     let leaf = CertificateParams::new(vec![String::from("localhost")])
         .unwrap()
         .signed_by(&KeyPair::generate().unwrap(), &root)
         .unwrap();
-    let mut roots = RootCertStore::empty();
-    roots.add(root.der().clone()).unwrap();
-    let verifier = CtVerifier::ecc_only(roots).unwrap();
-    let error = verifier
+    (root.der().clone(), leaf.der().clone())
+}
+
+fn store(roots: &[&CertificateDer<'static>]) -> RootCertStore {
+    let mut store = RootCertStore::empty();
+    for root in roots {
+        store.add((*root).clone()).unwrap();
+    }
+    store
+}
+
+fn verify_localhost(
+    verifier: &dyn ServerCertVerifier,
+    leaf: &CertificateDer<'static>,
+) -> Result<(), rustls::Error> {
+    verifier
         .verify_server_cert(
-            leaf.der(),
+            leaf,
             &[],
             &ServerName::try_from("localhost").unwrap(),
             &[],
             UnixTime::now(),
         )
-        .unwrap_err();
+        .map(|_| ())
+}
+
+#[test]
+fn a_chain_to_a_public_root_without_scts_is_rejected() {
+    let (root, leaf) = generated_chain("CT public test root");
+    let verifier = CtVerifier::ecc_only(store(&[&root]), store(&[&root])).unwrap();
+    let error = verify_localhost(verifier.as_ref(), &leaf).unwrap_err();
     assert!(is_not_logged(&error), "{error:?}");
     assert!(not_logged(&error)
         .unwrap()
         .to_string()
         .contains("certificate not publicly logged"));
+}
+
+#[test]
+fn a_chain_to_a_local_root_without_scts_is_accepted() {
+    let (public, _) = generated_chain("CT public test root");
+    let (local, leaf) = generated_chain("CT local test root");
+    let verifier = CtVerifier::ecc_only(store(&[&public, &local]), store(&[&public])).unwrap();
+    verify_localhost(verifier.as_ref(), &leaf).unwrap();
+}
+
+#[test]
+fn a_store_without_public_roots_skips_ct() {
+    let (local, leaf) = generated_chain("CT local test root");
+    let verifier = CtVerifier::ecc_only(store(&[&local]), RootCertStore::empty()).unwrap();
+    verify_localhost(verifier.as_ref(), &leaf).unwrap();
+}
+
+#[test]
+fn the_unscoped_verifier_still_enforces_ct_everywhere() {
+    let (local, leaf) = generated_chain("CT local test root");
+    let inner = ps_rustcrypto::policy::EccOnlyVerifier::new(store(&[&local])).unwrap();
+    let error = verify_localhost(CtVerifier::new(inner).as_ref(), &leaf).unwrap_err();
+    assert!(is_not_logged(&error), "{error:?}");
 }
 
 fn rcgen_leaf() -> CertificateDer<'static> {
