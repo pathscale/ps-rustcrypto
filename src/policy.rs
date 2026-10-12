@@ -12,6 +12,8 @@
 //! wanted and the presented key algorithm. is_key_type_refusal tells it apart
 //! from a genuine extended key usage mismatch.
 
+pub mod ct;
+
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
