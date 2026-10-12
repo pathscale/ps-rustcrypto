@@ -36,6 +36,18 @@ pub fn provider() -> CryptoProvider {
     }
 }
 
+/// `provider()` that also accepts RSA-PSS server handshake signatures.
+///
+/// Only the CertificateVerify can be RSA; chains signed with RSA PKCS#1 v1.5
+/// are still refused.
+#[cfg(feature = "rsa-pss")]
+pub fn provider_with_rsa_pss() -> CryptoProvider {
+    CryptoProvider {
+        signature_verification_algorithms: verify::ALGORITHMS_WITH_RSA_PSS,
+        ..provider()
+    }
+}
+
 impl SecureRandom for Provider {
     fn fill(&self, bytes: &mut [u8]) -> Result<(), GetRandomFailed> {
         getrandom::fill(bytes).map_err(|_| GetRandomFailed)

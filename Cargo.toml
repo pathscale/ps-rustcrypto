@@ -18,10 +18,14 @@ std = ["alloc", "pki-types/std", "rustls/std"]
 tls12 = ["rustls/tls12"]
 logging = ["rustls/logging"]
 zeroize = ["ed25519-dalek/zeroize", "x25519-dalek/zeroize"]
+# Off by default. Adds verify-only RSA-PSS for the server CertificateVerify
+# through `verify::ALGORITHMS_WITH_RSA_PSS`; `ALGORITHMS` stays ECC-only.
+rsa-pss = ["dep:rsa-handshake"]
 
 [dependencies]
 chacha20poly1305 = { version = "^0.11", default-features = false }
 digest = { version = "^0.11", default-features = false }
+rsa-handshake = { version = "^0.1", optional = true }
 ed25519-dalek = { version = "^3", default-features = false, features = ["pkcs8"] }
 getrandom = { version = "^0.4", default-features = false }
 hmac = { version = "^0.13", default-features = false }
