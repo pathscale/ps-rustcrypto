@@ -82,7 +82,7 @@ impl EccOnlyVerifier {
         end_entity: &CertificateDer<'_>,
         intermediates: &[CertificateDer<'_>],
     ) -> Result<(), Error> {
-        let mut top = None;
+        let mut issuers = Vec::new();
         for der in core::iter::once(end_entity).chain(intermediates) {
             // Unparseable input is left to webpki, which reports it properly.
             let Some(cert) = parse(der.as_ref()) else {
@@ -91,18 +91,25 @@ impl EccOnlyVerifier {
             if !allowed(cert.key) {
                 return Err(refusal(cert.key));
             }
-            top = Some(cert.issuer);
+            issuers.push(cert.issuer);
         }
-        if let Some(issuer) = top {
-            if !self.kept.iter().any(|subject| subject.as_slice() == issuer) {
-                if let Some((_, oid)) = self
-                    .refused
-                    .iter()
-                    .find(|(subject, _)| subject.as_slice() == issuer)
-                {
-                    return Err(refusal(oid));
-                }
-            }
+        // A server may send a cross-signed copy of an ECC root alongside the
+        // chain. webpki stops at the ECC anchor and never uses that copy, so
+        // when any certificate names a kept anchor the path is left to webpki,
+        // which can only end at kept, ECC anchors anyway.
+        if self
+            .kept
+            .iter()
+            .any(|subject| issuers.contains(&subject.as_slice()))
+        {
+            return Ok(());
+        }
+        if let Some((_, oid)) = self
+            .refused
+            .iter()
+            .find(|(subject, _)| issuers.contains(&subject.as_slice()))
+        {
+            return Err(refusal(oid));
         }
         Ok(())
     }
