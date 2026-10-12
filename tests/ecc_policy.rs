@@ -209,6 +209,42 @@ fn pki_other_root() -> CertificateDer<'static> {
         .clone()
 }
 
+/// A server may append its ECC root cross-signed by an RSA root, as
+/// Cloudflare (GTS Root R4 by GlobalSign Root CA) and Let's Encrypt (ISRG
+/// Root X2 by X1) do. The path ends at the ECC anchor and never uses that
+/// copy, so it must not be refused.
+#[test]
+fn rsa_cross_signed_extra_is_ignored() {
+    let pki = pki();
+    let mut params = CertificateParams::new(Vec::new()).unwrap();
+    params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+    params
+        .distinguished_name
+        .push(DnType::CommonName, "Legacy RSA root");
+    let legacy = CertifiedIssuer::self_signed(params, KeyPair::generate().unwrap()).unwrap();
+    let mut copy = CertificateParams::new(Vec::new()).unwrap();
+    copy.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+    copy.distinguished_name
+        .push(DnType::CommonName, "ECC policy test root");
+    let cross = copy
+        .signed_by(&KeyPair::generate().unwrap(), &legacy)
+        .unwrap()
+        .der()
+        .clone();
+    let rsa_key = webpki_roots::TLS_SERVER_ROOTS
+        .iter()
+        .find(|anchor| holds_rsa(anchor.subject_public_key_info.as_ref()))
+        .unwrap()
+        .subject_public_key_info
+        .clone();
+    let mut roots = roots(&pki);
+    roots.add(legacy.der().clone()).unwrap();
+    roots.roots[1].subject_public_key_info = rsa_key;
+    let outcome = handshake(vec![pki.leaf.clone(), cross], &pki.leaf_key, roots);
+    assert!(outcome.client.is_none(), "{:?}", outcome.client);
+    assert!(outcome.complete);
+}
+
 #[test]
 fn all_ecc_chain_completes() {
     let pki = pki();
