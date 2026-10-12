@@ -32,9 +32,10 @@ pub static ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
     ],
 };
 
-/// `ALGORITHMS` plus RSA-PSS (`rsa_pss_rsae_*`) for the handshake signature only.
+/// The RSA fallback: `ALGORITHMS` plus RSA, split by use.
 ///
-/// Certificate chains signed with RSA PKCS#1 v1.5 are still refused.
+/// `all` (certificate signatures) adds RSA PKCS#1 v1.5 and no PSS; `mapping`
+/// (the TLS 1.3 CertificateVerify) adds `rsa_pss_rsae_*` and no PKCS#1 v1.5.
 #[cfg(feature = "rsa-pss")]
 pub static ALGORITHMS_WITH_RSA_PSS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
     all: &[
@@ -43,9 +44,9 @@ pub static ALGORITHMS_WITH_RSA_PSS: WebPkiSupportedAlgorithms = WebPkiSupportedA
         ECDSA_P384_SHA256,
         ECDSA_P384_SHA384,
         ED25519,
-        rsa_pss::RSA_PSS_SHA256,
-        rsa_pss::RSA_PSS_SHA384,
-        rsa_pss::RSA_PSS_SHA512,
+        rsa_pss::RSA_PKCS1_SHA256,
+        rsa_pss::RSA_PKCS1_SHA384,
+        rsa_pss::RSA_PKCS1_SHA512,
     ],
     mapping: &[
         (

@@ -1,8 +1,8 @@
 use pki_types::{alg_id, AlgorithmIdentifier, InvalidSignature, SignatureVerificationAlgorithm};
 use rsa_handshake::{Hash, RsaPublicKey};
 
-macro_rules! impl_rsa_pss {
-    ($name:ident, $verifier:ident, $signature_id:expr, $hash:expr) => {
+macro_rules! impl_rsa {
+    ($name:ident, $verifier:ident, $signature_id:expr, $hash:expr, $verify:ident) => {
         #[derive(Debug)]
         struct $verifier;
 
@@ -24,7 +24,7 @@ macro_rules! impl_rsa_pss {
             ) -> Result<(), InvalidSignature> {
                 let key =
                     RsaPublicKey::from_der(public_key).map_err(|_| super::invalid_signature())?;
-                key.verify_pss($hash, message, signature)
+                key.$verify($hash, message, signature)
                     .map_err(|_| super::invalid_signature())
             }
         }
@@ -33,21 +33,47 @@ macro_rules! impl_rsa_pss {
     };
 }
 
-impl_rsa_pss!(
+impl_rsa!(
     RSA_PSS_SHA256,
     RsaPssSha256,
     alg_id::RSA_PSS_SHA256,
-    Hash::Sha256
+    Hash::Sha256,
+    verify_pss
 );
-impl_rsa_pss!(
+impl_rsa!(
     RSA_PSS_SHA384,
     RsaPssSha384,
     alg_id::RSA_PSS_SHA384,
-    Hash::Sha384
+    Hash::Sha384,
+    verify_pss
 );
-impl_rsa_pss!(
+impl_rsa!(
     RSA_PSS_SHA512,
     RsaPssSha512,
     alg_id::RSA_PSS_SHA512,
-    Hash::Sha512
+    Hash::Sha512,
+    verify_pss
+);
+
+// Certificate signatures only: never mapped to a TLS signature scheme.
+impl_rsa!(
+    RSA_PKCS1_SHA256,
+    RsaPkcs1Sha256,
+    alg_id::RSA_PKCS1_SHA256,
+    Hash::Sha256,
+    verify_pkcs1v15
+);
+impl_rsa!(
+    RSA_PKCS1_SHA384,
+    RsaPkcs1Sha384,
+    alg_id::RSA_PKCS1_SHA384,
+    Hash::Sha384,
+    verify_pkcs1v15
+);
+impl_rsa!(
+    RSA_PKCS1_SHA512,
+    RsaPkcs1Sha512,
+    alg_id::RSA_PKCS1_SHA512,
+    Hash::Sha512,
+    verify_pkcs1v15
 );
