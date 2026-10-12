@@ -34,3 +34,10 @@ sec1 = { version = "^0.8", default-features = false, features = ["der"] }
 sha2 = { version = "^0.11", default-features = false, features = ["oid"] }
 signature = { version = "^3", default-features = false }
 x25519-dalek = { version = "^3", default-features = false, features = ["static_secrets"] }
+
+[dev-dependencies]
+# Certificates generated in process; ring is a test-only key generator here.
+rcgen = "^0.14"
+# Public root bundles, used only as a source of RSA keys to refuse.
+webpki-roots = "^1"
+webpki-root-certs = "^1"
