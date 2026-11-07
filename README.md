@@ -16,8 +16,10 @@ System entropy comes from getrandom 0.4 through its fallible `fill` API.
 AEAD traits come from `chacha20poly1305::aead`; there are no direct
 aead, crypto-common, rand_core or paste dependencies.
 
-There is deliberately no AES and no RSA. Servers that only offer AES suites,
-and servers or certificate chains that need RSA signatures, are refused.
+`provider()` verifies ECDSA and Ed25519 signatures. The opt-in `rsa-pss`
+feature exposes `provider_with_rsa_pss()`, which adds verify-only support for
+RSA-PSS in TLS 1.3 server `CertificateVerify` and RSA PKCS#1 v1.5 certificate
+signatures. Both providers use ChaCha20-Poly1305 suites.
 
 Use an explicit provider:
 
@@ -38,7 +40,8 @@ Changes from upstream:
 - Ported to the current RustCrypto generation with major-line carets.
 - Replaced paste identifier generation with explicit type names.
 - Removed the unused direct webpki dependency and use pki-types algorithm IDs.
-- Removed AES-GCM and RSA (verification and signing) entirely.
+- Removed AES-GCM and RSA signing; default verification is ECC-only, with
+  optional verify-only RSA-PSS fallback support.
 - Prefer TLS 1.3 suites and advertise only implemented signature schemes.
 - Reject non-contributory X25519 exchanges and propagate key-generation
   entropy failures.
@@ -55,6 +58,7 @@ There is no ring, AWS-LC, OpenSSL, Tokio or C crypto dependency in this
 manifest. Resolved dependencies and target-specific implementation paths
 must still be audited before publication.
 
-AES, RSA, P-521, SHA-1 signatures, QUIC and FIPS certification are not
-supported. Unsupported algorithms fail verification; they do not
-fall back to another provider.
+AES, P-521, SHA-1 signatures, QUIC and FIPS certification are not supported.
+RSA verification is available only through the opt-in `rsa-pss` feature and
+`provider_with_rsa_pss()`. Unsupported algorithms fail verification; they do
+not fall back to another provider.
