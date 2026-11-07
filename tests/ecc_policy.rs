@@ -151,6 +151,11 @@ fn assert_refused(outcome: Outcome) {
         is_rsa_refusal(&client),
         "unexpected client error {client:?}"
     );
+    #[cfg(feature = "rsa-pss")]
+    #[allow(deprecated)]
+    {
+        assert!(!ps_rustcrypto::fallback::wants_rsa_fallback(&client));
+    }
     assert_eq!(
         outcome.server,
         Some(Error::AlertReceived(
