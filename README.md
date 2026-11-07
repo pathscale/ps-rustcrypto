@@ -34,6 +34,16 @@ let config = rustls::ClientConfig::builder_with_provider(provider)
 The host supplies trust anchors, socket transport, scheduling and deadlines.
 This crate creates no threads, channels or network connections.
 
+Select the TLS configuration for each destination before connecting. For a
+destination whose policy permits RSA verification, configure
+`provider_with_rsa_pss()` up front and keep the applicable trust roots and
+certificate-transparency policy. With `std` and `rsa-pss`,
+`fallback::HandshakeAttempts` can give the caller one connection or authorize
+one additional connection through `RetryPolicy::SameConfigOnce`. Both
+attempts use the same configuration and server name. The caller handles
+transport failures and stops on TLS validation failures. The deprecated
+`wants_rsa_fallback` helper always returns false.
+
 Changes from upstream:
 
 - Published fork name and caret dependencies.

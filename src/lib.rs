@@ -38,7 +38,7 @@ pub fn provider() -> CryptoProvider {
     }
 }
 
-/// `provider()` for the RSA fallback connection.
+/// `provider()` with RSA verification for callers that explicitly allow it.
 ///
 /// The server CertificateVerify may be RSA-PSS and certificate signatures may
 /// be RSA PKCS#1 v1.5; nothing else about RSA is accepted.
