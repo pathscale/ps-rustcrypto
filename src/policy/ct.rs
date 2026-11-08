@@ -313,7 +313,11 @@ impl ServerCertVerifier for CtVerifier {
         let public = match &self.scope {
             Scope::Every => true,
             Scope::Public(public) => match public.verify_server_cert(
-                end_entity, intermediates, server_name, ocsp_response, now,
+                end_entity,
+                intermediates,
+                server_name,
+                ocsp_response,
+                now,
             ) {
                 Ok(_) => true,
                 Err(Error::InvalidCertificate(CertificateError::UnknownIssuer)) => false,
