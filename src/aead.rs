@@ -1,8 +1,6 @@
 use chacha20poly1305::aead::{self, Buffer};
 use rustls::crypto::cipher::{BorrowedPayload, PrefixedPayload};
 
-#[cfg(feature = "tls13-aes128-gcm")]
-pub(crate) mod aes128gcm;
 pub mod chacha20;
 
 pub(crate) struct EncryptBufferAdapter<'a>(pub(crate) &'a mut PrefixedPayload);

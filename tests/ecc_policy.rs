@@ -10,13 +10,12 @@ use std::sync::Arc;
 use pki_types::{CertificateDer, PrivateKeyDer, ServerName};
 use ps_rustcrypto::policy::{is_rsa_refusal, EccOnlyVerifier};
 use rcgen::{BasicConstraints, CertificateParams, CertifiedIssuer, DnType, IsCa, KeyPair};
-use rustls::crypto::CryptoProvider;
 use rustls::server::{ClientHello, ResolvesServerCert};
 use rustls::sign::CertifiedKey;
 use rustls::version::TLS13;
 use rustls::{
-    AlertDescription, CipherSuite, ClientConfig, ClientConnection, Error, RootCertStore,
-    ServerConfig, ServerConnection,
+    AlertDescription, ClientConfig, ClientConnection, Error, RootCertStore, ServerConfig,
+    ServerConnection,
 };
 
 /// rsaEncryption, 1.2.840.113549.1.1.1, as a DER element.
@@ -81,31 +80,21 @@ impl ResolvesServerCert for Fixed {
 struct Outcome {
     client: Option<Error>,
     server: Option<Error>,
-    negotiated: Option<CipherSuite>,
+    complete: bool,
 }
 
 fn handshake(chain: Vec<CertificateDer<'static>>, key: &KeyPair, roots: RootCertStore) -> Outcome {
     let provider = Arc::new(ps_rustcrypto::provider());
-    handshake_with_providers(chain, key, roots, provider.clone(), provider)
-}
-
-fn handshake_with_providers(
-    chain: Vec<CertificateDer<'static>>,
-    key: &KeyPair,
-    roots: RootCertStore,
-    client_provider: Arc<CryptoProvider>,
-    server_provider: Arc<CryptoProvider>,
-) -> Outcome {
-    let signing = server_provider
+    let signing = provider
         .key_provider
         .load_private_key(PrivateKeyDer::Pkcs8(key.serialize_der().into()))
         .unwrap();
-    let server = ServerConfig::builder_with_provider(server_provider)
+    let server = ServerConfig::builder_with_provider(provider.clone())
         .with_protocol_versions(&[&TLS13])
         .unwrap()
         .with_no_client_auth()
         .with_cert_resolver(Arc::new(Fixed(Arc::new(CertifiedKey::new(chain, signing)))));
-    let client = ClientConfig::builder_with_provider(client_provider)
+    let client = ClientConfig::builder_with_provider(provider)
         .with_protocol_versions(&[&TLS13])
         .unwrap()
         .dangerous()
@@ -119,7 +108,7 @@ fn handshake_with_providers(
     let mut outcome = Outcome {
         client: None,
         server: None,
-        negotiated: None,
+        complete: false,
     };
     for _ in 0..8 {
         let mut bytes = Vec::new();
@@ -148,7 +137,7 @@ fn handshake_with_providers(
             }
         }
         if !client.is_handshaking() && !server.is_handshaking() {
-            outcome.negotiated = client.negotiated_cipher_suite().map(|suite| suite.suite());
+            outcome.complete = true;
             return outcome;
         }
     }
@@ -156,7 +145,7 @@ fn handshake_with_providers(
 }
 
 fn assert_refused(outcome: Outcome) {
-    assert!(outcome.negotiated.is_none());
+    assert!(!outcome.complete);
     let client = outcome.client.expect("client refused the chain");
     assert!(
         is_rsa_refusal(&client),
@@ -258,7 +247,7 @@ fn rsa_cross_signed_extra_is_ignored() {
     roots.roots[1].subject_public_key_info = rsa_key;
     let outcome = handshake(vec![pki.leaf.clone(), cross], &pki.leaf_key, roots);
     assert!(outcome.client.is_none(), "{:?}", outcome.client);
-    assert!(outcome.negotiated.is_some());
+    assert!(outcome.complete);
 }
 
 #[test]
@@ -267,47 +256,7 @@ fn all_ecc_chain_completes() {
     let outcome = handshake(vec![pki.leaf.clone()], &pki.leaf_key, roots(&pki));
     assert!(outcome.client.is_none(), "{:?}", outcome.client);
     assert!(outcome.server.is_none(), "{:?}", outcome.server);
-    assert!(outcome.negotiated.is_some());
-}
-
-#[cfg(feature = "tls13-aes128-gcm")]
-#[test]
-fn aes_only_peer_requires_explicit_suite_opt_in() {
-    let pki = pki();
-    let aes = ps_rustcrypto::TLS13_AES_128_GCM_SHA256;
-    let mut server = ps_rustcrypto::provider();
-    server.cipher_suites = vec![aes];
-    let server = Arc::new(server);
-
-    let mut client = ps_rustcrypto::provider();
-    let outcome = handshake_with_providers(
-        vec![pki.leaf.clone()],
-        &pki.leaf_key,
-        roots(&pki),
-        Arc::new(client.clone()),
-        server.clone(),
-    );
-    assert_eq!(
-        outcome.server,
-        Some(Error::PeerIncompatible(
-            rustls::PeerIncompatible::NoCipherSuitesInCommon
-        ))
-    );
-
-    client.cipher_suites.push(aes);
-    let outcome = handshake_with_providers(
-        vec![pki.leaf.clone()],
-        &pki.leaf_key,
-        roots(&pki),
-        Arc::new(client),
-        server,
-    );
-    assert!(outcome.client.is_none(), "{:?}", outcome.client);
-    assert!(outcome.server.is_none(), "{:?}", outcome.server);
-    assert_eq!(
-        outcome.negotiated,
-        Some(CipherSuite::TLS13_AES_128_GCM_SHA256)
-    );
+    assert!(outcome.complete);
 }
 
 #[test]

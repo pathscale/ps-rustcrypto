@@ -77,21 +77,6 @@ pub const TLS13_CHACHA20_POLY1305_SHA256: SupportedCipherSuite =
         quic: None,
     });
 
-/// TLS 1.3 AES-128-GCM for callers that explicitly add it to their suite list.
-#[cfg(feature = "tls13-aes128-gcm")]
-pub const TLS13_AES_128_GCM_SHA256: SupportedCipherSuite =
-    SupportedCipherSuite::Tls13(&Tls13CipherSuite {
-        common: CipherSuiteCommon {
-            suite: CipherSuite::TLS13_AES_128_GCM_SHA256,
-            hash_provider: hash::SHA256,
-            // As in rustls's other providers, stay below the RFC 8446 §5.5 limit.
-            confidentiality_limit: 1 << 24,
-        },
-        hkdf_provider: &rustls::crypto::tls13::HkdfUsingHmac(hmac::SHA256),
-        aead_alg: &aead::aes128gcm::Aes128Gcm,
-        quic: None,
-    });
-
 #[cfg(feature = "tls12")]
 const TLS12_ECDSA_SCHEMES: &[SignatureScheme] = &[
     SignatureScheme::ECDSA_NISTP256_SHA256,
