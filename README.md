@@ -21,6 +21,10 @@ feature exposes `provider_with_rsa_pss()`, which adds verify-only support for
 RSA-PSS in TLS 1.3 server `CertificateVerify` and RSA PKCS#1 v1.5 certificate
 signatures. Both providers use ChaCha20-Poly1305 suites.
 
+The `tls13-aes128-gcm` feature exposes `TLS13_AES_128_GCM_SHA256`. Callers
+that need it can append it to an explicit provider's `cipher_suites`.
+Both provider constructors still offer ChaCha20-Poly1305 by default.
+
 Use an explicit provider:
 
 ```rust
@@ -50,8 +54,7 @@ Changes from upstream:
 - Ported to the current RustCrypto generation with major-line carets.
 - Replaced paste identifier generation with explicit type names.
 - Removed the unused direct webpki dependency and use pki-types algorithm IDs.
-- Removed AES-GCM and RSA signing; default verification is ECC-only, with
-  optional verify-only RSA-PSS fallback support.
+- Default verification is ECC-only, with optional verify-only RSA-PSS support.
 - Prefer TLS 1.3 suites and advertise only implemented signature schemes.
 - Reject non-contributory X25519 exchanges and propagate key-generation
   entropy failures.
@@ -68,7 +71,7 @@ There is no ring, AWS-LC, OpenSSL, Tokio or C crypto dependency in this
 manifest. Resolved dependencies and target-specific implementation paths
 must still be audited before publication.
 
-AES, P-521, SHA-1 signatures, QUIC and FIPS certification are not supported.
+P-521, SHA-1 signatures, QUIC and FIPS certification are unsupported.
 RSA verification is available only through the opt-in `rsa-pss` feature and
 `provider_with_rsa_pss()`. Unsupported algorithms fail verification; they do
 not fall back to another provider.
