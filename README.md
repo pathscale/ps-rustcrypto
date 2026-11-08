@@ -21,10 +21,6 @@ feature exposes `provider_with_rsa_pss()`, which adds verify-only support for
 RSA-PSS in TLS 1.3 server `CertificateVerify` and RSA PKCS#1 v1.5 certificate
 signatures. Both providers use ChaCha20-Poly1305 suites.
 
-The `tls13-aes128-gcm` feature exposes `TLS13_AES_128_GCM_SHA256`. Callers
-that need it can append it to an explicit provider's `cipher_suites`.
-Both provider constructors still offer ChaCha20-Poly1305 by default.
-
 Use an explicit provider:
 
 ```rust
