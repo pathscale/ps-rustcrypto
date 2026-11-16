@@ -260,7 +260,9 @@ impl CtVerifier {
     }
 
     /// CT only on chains that public, a verifier over the publicly trusted
-    /// roots, also accepts. Chains only inner accepts skip CT.
+    /// roots, also accepts. Chains public rejects with `UnknownIssuer`, which
+    /// have no public issuer, skip CT. Any other error from public refuses
+    /// the chain, even when inner accepted it.
     pub fn public_only(
         inner: Arc<dyn ServerCertVerifier>,
         public: Arc<dyn ServerCertVerifier>,

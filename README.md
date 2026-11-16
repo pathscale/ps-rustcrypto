@@ -9,7 +9,7 @@ supplies ChaCha20-Poly1305, SHA-256, HMAC, X25519, P-256 and P-384.
 Certificate and handshake signature verification supports P-256/P-384 ECDSA
 and Ed25519.
 
-Version 0.3.0 uses chacha20poly1305 0.11, digest 0.11, sha2 0.11,
+This version uses chacha20poly1305 0.11, digest 0.11, sha2 0.11,
 hmac 0.13, p256/p384 0.14, sec1 0.8, pkcs8 0.11, signature 3,
 ed25519-dalek/x25519-dalek 3 and rustls-pki-types 1.
 System entropy comes from getrandom 0.4 through its fallible `fill` API.
@@ -41,8 +41,9 @@ certificate-transparency policy. With `std` and `rsa-pss`,
 `fallback::HandshakeAttempts` can give the caller one connection or authorize
 one additional connection through `RetryPolicy::SameConfigOnce`. Both
 attempts use the same configuration and server name. The caller handles
-transport failures and stops on TLS validation failures. The deprecated
-`wants_rsa_fallback` helper always returns false.
+transport failures and stops on TLS validation failures. Automatic RSA
+fallback was removed on purpose: the deprecated `wants_rsa_fallback` helper
+always returns false, so code that branches on it no longer retries.
 
 Changes from upstream:
 
