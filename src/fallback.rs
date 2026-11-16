@@ -23,7 +23,9 @@ pub fn rsa_fallback_verifier(
 }
 
 /// The RSA fallback verifier over roots, with CT on chains that also
-/// validate against public_roots, the publicly trusted subset.
+/// validate against public_roots, the publicly trusted subset. Chains with
+/// no issuer in public_roots skip CT; any other public_roots validation
+/// error refuses the chain.
 pub fn rsa_fallback_ct_verifier(
     roots: RootCertStore,
     public_roots: RootCertStore,
