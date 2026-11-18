@@ -1,6 +1,6 @@
 [package]
 name = "ps-rustcrypto"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 rust-version = "1.85"
 authors = ["RustCrypto Developers"]
@@ -14,7 +14,8 @@ keywords = ["rustls", "tls", "rustcrypto"]
 [features]
 default = ["std", "tls12", "zeroize"]
 alloc = ["pki-types/alloc", "ed25519-dalek/alloc", "signature/alloc"]
-std = ["alloc", "pki-types/std", "rustls/std"]
+std = ["alloc", "pki-types/std", "rustls/std", "dep:getrandom"]
+eko = ["alloc", "tls12", "zeroize", "dep:libc-rs"]
 tls12 = ["rustls/tls12"]
 logging = ["rustls/logging"]
 zeroize = ["ed25519-dalek/zeroize", "x25519-dalek/zeroize"]
@@ -27,8 +28,9 @@ chacha20poly1305 = { version = "^0.11", default-features = false }
 digest = { version = "^0.11", default-features = false }
 legacy-bullshit = { version = "^0.3", default-features = false, optional = true }
 ed25519-dalek = { version = "^3", default-features = false, features = ["pkcs8"] }
-getrandom = { version = "^0.4", default-features = false }
+getrandom = { version = "^0.4", default-features = false, optional = true }
 hmac = { version = "^0.13", default-features = false }
+libc-rs = { version = "^0.2.5", optional = true }
 p256 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
 p384 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
 pkcs8 = { version = "^0.11", default-features = false, features = ["alloc"] }

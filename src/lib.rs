@@ -14,12 +14,12 @@ use rustls::{CipherSuite, SupportedCipherSuite, Tls13CipherSuite};
 use rustls::SignatureScheme;
 
 mod aead;
-#[cfg(all(feature = "std", feature = "rsa-pss"))]
+#[cfg(all(feature = "alloc", feature = "rsa-pss"))]
 pub mod fallback;
 mod hash;
 mod hmac;
 mod kx;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod policy;
 pub mod sign;
 mod verify;
@@ -52,7 +52,19 @@ pub fn provider_with_rsa_pss() -> CryptoProvider {
 
 impl SecureRandom for Provider {
     fn fill(&self, bytes: &mut [u8]) -> Result<(), GetRandomFailed> {
-        getrandom::fill(bytes).map_err(|_| GetRandomFailed)
+        #[cfg(feature = "std")]
+        {
+            getrandom::fill(bytes).map_err(|_| GetRandomFailed)
+        }
+        #[cfg(all(not(feature = "std"), feature = "eko"))]
+        {
+            libc_rs::rand::fill_random(bytes).map_err(|_| GetRandomFailed)
+        }
+        #[cfg(not(any(feature = "std", feature = "eko")))]
+        {
+            let _ = bytes;
+            Err(GetRandomFailed)
+        }
     }
 }
 

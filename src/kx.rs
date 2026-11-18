@@ -4,7 +4,8 @@ use rustls::crypto::{ActiveKeyExchange, SharedSecret, SupportedKxGroup};
 use rustls::{Error, NamedGroup, PeerMisbehaved};
 
 fn entropy(bytes: &mut [u8]) -> Result<(), Error> {
-    getrandom::fill(bytes).map_err(|_| Error::FailedToGetRandomBytes)
+    rustls::crypto::SecureRandom::fill(&crate::Provider, bytes)
+        .map_err(|_| Error::FailedToGetRandomBytes)
 }
 
 fn invalid_share() -> Error {

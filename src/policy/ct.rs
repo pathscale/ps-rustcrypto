@@ -111,11 +111,19 @@ pub fn is_not_logged(error: &Error) -> bool {
 
 /// The CT failure inside error, if that is what it is.
 pub fn not_logged(error: &Error) -> Option<&NotLogged> {
-    match error {
-        Error::InvalidCertificate(CertificateError::Other(other)) => {
-            other.0.downcast_ref::<NotLogged>()
+    #[cfg(feature = "std")]
+    {
+        match error {
+            Error::InvalidCertificate(CertificateError::Other(other)) => {
+                other.0.downcast_ref::<NotLogged>()
+            }
+            _ => None,
         }
-        _ => None,
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        let _ = error;
+        None
     }
 }
 
@@ -332,7 +340,16 @@ impl ServerCertVerifier for CtVerifier {
         }
         let intermediates: Vec<&[u8]> = intermediates.iter().map(|der| der.as_ref()).collect();
         evaluate(end_entity.as_ref(), &intermediates, ocsp_response, &[], now).map_err(
-            |error| Error::InvalidCertificate(CertificateError::Other(OtherError(Arc::new(error)))),
+            |error| {
+                #[cfg(feature = "std")]
+                let other = OtherError(Arc::new(error));
+                #[cfg(not(feature = "std"))]
+                let other = {
+                    let _ = error;
+                    OtherError()
+                };
+                Error::InvalidCertificate(CertificateError::Other(other))
+            },
         )?;
         Ok(verified)
     }

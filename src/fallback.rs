@@ -9,7 +9,9 @@ use alloc::sync::Arc;
 
 use pki_types::ServerName;
 use rustls::client::{VerifierBuilderError, WebPkiServerVerifier};
-use rustls::{ClientConfig, ClientConnection, Error, RootCertStore};
+#[cfg(feature = "std")]
+use rustls::ClientConnection;
+use rustls::{ClientConfig, Error, RootCertStore};
 
 /// A webpki verifier over every root, using `provider_with_rsa_pss()`.
 pub fn rsa_fallback_verifier(
@@ -79,6 +81,7 @@ impl HandshakeAttempts {
 
     /// Create the next connection. Each call consumes an attempt, including
     /// when rustls cannot create the connection. Returns `None` when exhausted.
+    #[cfg(feature = "std")]
     pub fn next_attempt(&mut self) -> Option<Result<ClientConnection, Error>> {
         self.remaining = self.remaining.checked_sub(1)?;
         Some(ClientConnection::new(
