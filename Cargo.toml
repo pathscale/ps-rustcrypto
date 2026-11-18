@@ -1,6 +1,6 @@
 [package]
 name = "ps-rustcrypto"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 rust-version = "1.85"
 authors = ["RustCrypto Developers"]
@@ -12,10 +12,9 @@ categories = ["cryptography", "no-std"]
 keywords = ["rustls", "tls", "rustcrypto"]
 
 [features]
-default = ["std", "tls12", "zeroize"]
+default = ["alloc", "tls12", "zeroize"]
 alloc = ["pki-types/alloc", "ed25519-dalek/alloc", "signature/alloc"]
-std = ["alloc", "pki-types/std", "rustls/std", "dep:getrandom"]
-eko = ["alloc", "tls12", "zeroize", "dep:libc-rs"]
+std = ["alloc", "pki-types/std", "rustls/std"]
 tls12 = ["rustls/tls12"]
 logging = ["rustls/logging"]
 zeroize = ["ed25519-dalek/zeroize", "x25519-dalek/zeroize"]
@@ -28,9 +27,7 @@ chacha20poly1305 = { version = "^0.11", default-features = false }
 digest = { version = "^0.11", default-features = false }
 legacy-bullshit = { version = "^0.3", default-features = false, optional = true }
 ed25519-dalek = { version = "^3", default-features = false, features = ["pkcs8"] }
-getrandom = { version = "^0.4", default-features = false, optional = true }
 hmac = { version = "^0.13", default-features = false }
-libc-rs = { version = "^0.2.5", optional = true }
 p256 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
 p384 = { version = "^0.14", default-features = false, features = ["alloc", "ecdsa", "ecdh", "pem", "pkcs8"] }
 pkcs8 = { version = "^0.11", default-features = false, features = ["alloc"] }
@@ -41,9 +38,27 @@ sha2 = { version = "^0.11", default-features = false, features = ["oid"] }
 signature = { version = "^3", default-features = false }
 x25519-dalek = { version = "^3", default-features = false, features = ["static_secrets"] }
 
+[target.'cfg(not(target_os = "none"))'.dependencies]
+ekostd = { version = "^0.2.10", default-features = false }
+
+[target.'cfg(target_os = "none")'.dependencies]
+libc-rs = { version = "^0.2.5" }
+
 [dev-dependencies]
 # Certificates generated in process; ring is a test-only key generator here.
 rcgen = "^0.14"
 # Public root bundles, used only as a source of RSA keys to refuse.
 webpki-roots = "^1"
 webpki-root-certs = "^1"
+
+[[test]]
+name = "ct"
+required-features = ["std"]
+
+[[test]]
+name = "ecc_only"
+required-features = ["std"]
+
+[[test]]
+name = "ecc_policy"
+required-features = ["std"]

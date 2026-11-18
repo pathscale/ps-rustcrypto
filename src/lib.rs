@@ -52,18 +52,22 @@ pub fn provider_with_rsa_pss() -> CryptoProvider {
 
 impl SecureRandom for Provider {
     fn fill(&self, bytes: &mut [u8]) -> Result<(), GetRandomFailed> {
-        #[cfg(feature = "std")]
-        {
-            getrandom::fill(bytes).map_err(|_| GetRandomFailed)
-        }
-        #[cfg(all(not(feature = "std"), feature = "eko"))]
+        #[cfg(target_os = "none")]
         {
             libc_rs::rand::fill_random(bytes).map_err(|_| GetRandomFailed)
         }
-        #[cfg(not(any(feature = "std", feature = "eko")))]
+        #[cfg(not(target_os = "none"))]
         {
-            let _ = bytes;
-            Err(GetRandomFailed)
+            let mut file = eko::file::File::open("/dev/urandom").map_err(|_| GetRandomFailed)?;
+            let mut offset = 0;
+            while offset < bytes.len() {
+                let n = file.read(&mut bytes[offset..]).map_err(|_| GetRandomFailed)?;
+                if n == 0 {
+                    return Err(GetRandomFailed);
+                }
+                offset += n;
+            }
+            Ok(())
         }
     }
 }
@@ -116,3 +120,28 @@ pub static ALL_CIPHER_SUITES: &[SupportedCipherSuite] = &[
     #[cfg(feature = "tls12")]
     TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
 ];
+
+#[cfg(test)]
+mod nostd_default_tests {
+    use super::*;
+
+    #[test]
+    fn default_nostd_entropy_and_kx_groups_roundtrip() {
+        let mut a = [0u8; 32];
+        let mut b = [0u8; 32];
+        Provider.fill(&mut a).expect("Provider::fill a");
+        Provider.fill(&mut b).expect("Provider::fill b");
+        assert_ne!(a, [0u8; 32]);
+        assert_ne!(a, b);
+
+        for group in kx::ALL_KX_GROUPS {
+            let alice = group.start().expect("alice kx start");
+            let bob = group.start().expect("bob kx start");
+            let alice_pub = alice.pub_key().to_vec();
+            let bob_pub = bob.pub_key().to_vec();
+            let s1 = alice.complete(&bob_pub).expect("alice complete");
+            let s2 = bob.complete(&alice_pub).expect("bob complete");
+            assert_eq!(s1.secret_bytes(), s2.secret_bytes());
+        }
+    }
+}

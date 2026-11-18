@@ -24,8 +24,10 @@ use p256::ecdsa::{Signature, VerifyingKey};
 use pki_types::{CertificateDer, ServerName, UnixTime};
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
 use rustls::client::VerifierBuilderError;
+#[cfg(feature = "std")]
+use rustls::OtherError;
 use rustls::{
-    CertificateError, DigitallySignedStruct, DistinguishedName, Error, OtherError, RootCertStore,
+    CertificateError, DigitallySignedStruct, DistinguishedName, Error, RootCertStore,
     SignatureScheme,
 };
 use sha2::{Digest, Sha256};
@@ -106,7 +108,14 @@ pub struct Logged {
 
 /// Whether error is a certificate failing the CT policy.
 pub fn is_not_logged(error: &Error) -> bool {
-    not_logged(error).is_some()
+    #[cfg(feature = "std")]
+    {
+        not_logged(error).is_some()
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        matches!(error, Error::General(msg) if msg.starts_with("certificate not publicly logged:"))
+    }
 }
 
 /// The CT failure inside error, if that is what it is.
@@ -342,13 +351,13 @@ impl ServerCertVerifier for CtVerifier {
         evaluate(end_entity.as_ref(), &intermediates, ocsp_response, &[], now).map_err(
             |error| {
                 #[cfg(feature = "std")]
-                let other = OtherError(Arc::new(error));
+                {
+                    Error::InvalidCertificate(CertificateError::Other(OtherError(Arc::new(error))))
+                }
                 #[cfg(not(feature = "std"))]
-                let other = {
-                    let _ = error;
-                    OtherError()
-                };
-                Error::InvalidCertificate(CertificateError::Other(other))
+                {
+                    Error::General(alloc::format!("{error}"))
+                }
             },
         )?;
         Ok(verified)
